@@ -156,7 +156,7 @@ class ZergBasicAgent(base_agent.BaseAgent):
     def step(self, obs):
         super(ZergBasicAgent, self).step(obs)
 
-        time.sleep(0.5)
+        # time.sleep(0.5)
 
         if obs.first():
             player_y, player_x = (obs.observation.feature_minimap.player_relative ==
@@ -211,24 +211,26 @@ class ZergBasicAgent(base_agent.BaseAgent):
             return actions.FUNCTIONS.select_point("select_all_type", (larva.x,
                                                                       larva.y))
 
+
+
         return actions.FUNCTIONS.no_op()
 
 def main(unused_argv):
-    #agent = ZergBasicAgent()
-    agent = TerranBasicAgent()
+    agent = ZergBasicAgent()
+    # agent = TerranBasicAgent()
     try:
         while True:
             with sc2_env.SC2Env(
                     #map_name="AbyssalReef",
                     map_name="Simple64",
-                    #players=[sc2_env.Agent(sc2_env.Race.zerg),
-                    players=[sc2_env.Agent(sc2_env.Race.terran),
+                    players=[sc2_env.Agent(sc2_env.Race.zerg),
+                    # players=[sc2_env.Agent(sc2_env.Race.terran),
                              sc2_env.Bot(sc2_env.Race.random,
                                          sc2_env.Difficulty.very_easy)],
                     agent_interface_format=features.AgentInterfaceFormat(
                       feature_dimensions=features.Dimensions(screen=84, minimap=64),
                       use_feature_units=True),
-                    step_mul=1,
+                    step_mul=8,
                     game_steps_per_episode=0,
                     visualize=True) as env:
 

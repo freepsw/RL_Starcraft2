@@ -1,4 +1,5 @@
 # 전체 실습 과정을 내 환경에서 정리함. (2020.08.22, MacOS 기준)
+- Test code for playing the starcraft2 using reinforcement learning
 
 ## STEP 1. Python 환경 설정 (using conda)
 
