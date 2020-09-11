@@ -21,8 +21,10 @@ ACTION_BUILD_BARRACKS = 'buildbarracks'
 ACTION_SELECT_BARRACKS = 'selectbarracks'
 ACTION_BUILD_MARINE = 'buildmarine'
 ACTION_SELECT_ARMY = 'selectarmy'
-ACTION_ATTACK = 'attack'
+ACTION_ATTACK = 'attack' # 64 * 64 pixel이므로 4096개의 좌표로 공격이 가능
 
+# 아래 action 중 ACTION_ATTACK은 하나의 위치로 정할수 없기 때문에
+# 4096개의 ACTION_ATTCK을 생성해야 함. (실습을 위해서는 16개로만 지정)
 smart_actions = [
     ACTION_DO_NOTHING,
     ACTION_SELECT_SCV,
@@ -37,11 +39,13 @@ smart_actions = [
 #    for mm_y in range(0, 64):
 #        smart_actions.append(ACTION_ATTACK + '_' + str(mm_x) + '_' + str(mm_y))
 
+# ACTION_ATTACK을 smart_actions에 추가
 for mm_x in range(0, 64):
     for mm_y in range(0, 64):
         if (mm_x + 1) % 16 == 0 and (mm_y + 1) % 16 == 0:
             smart_actions.append(ACTION_ATTACK + '_' + str(mm_x - 8) + '_' + str(mm_y - 8))
 
+# Reward를 제공할 가중치 (빌딩 파괴시 더 큰 보상)
 KILL_UNIT_REWARD = 0.2
 KILL_BUILDING_REWARD = 0.5
 
@@ -55,6 +59,8 @@ class QLearningTable:
         self.epsilon = e_greedy
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64)
 
+    # q-table에서 가장 값이 높은 action을 선택한다
+    # 이때 e_greedy의 확률만큼만 다른 액선을 랜덤으로 선택한다.
     def choose_action(self, observation):
         self.check_state_exist(observation)
 
@@ -63,7 +69,7 @@ class QLearningTable:
             # state_action = self.q_table.ix[observation, :]
             state_action = self.q_table.loc[observation, :]
 
-            # some actions have the same value
+            # some actions have the same value (가장 높은 값의 액션이 여러개 있는 경우 랜덤으로 1개만)
             state_action = state_action.reindex(np.random.permutation(state_action.index))
 
             action = state_action.idxmax()
@@ -77,12 +83,12 @@ class QLearningTable:
         self.check_state_exist(s_)
         self.check_state_exist(s)
 
-        # q_predict = self.q_table.ix[s, a]
+        # q_predict = self.q_table.ix[s, a] (현재 상태 Q-Value 값)
         q_predict = self.q_table.loc[s, a]
-        # q_target = r + self.gamma * self.q_table.ix[s_, :].max()
+        # q_target = r + self.gamma * self.q_table.ix[s_, :].max() (다음 상태 예측 Q-Value 값)
         q_target = r + self.gamma * self.q_table.loc[s_, :].max()
 
-        # update
+        # update (게임 중 새로운 상태가 발생하면 계속 q-table에 상태를 추가 )
         # self.q_table.ix[s, a] += self.lr * (q_target - q_predict)
         self.q_table.loc[s, a] += self.lr * (q_target - q_predict)
 
@@ -178,6 +184,8 @@ class TerranRLAgent(base_agent.BaseAgent):
 #        current_state[2] = supply_limit
 #        current_state[3] = army_supply
 #
+        # 적군의 위치를 파악한다. (4096 pixel을 찾아서 적이 위치한 곳을 파악)
+        # 4096은 너무 시간이 걸리므로, 아래의 코드로 16개 포인트로 적용
 #        hot_squares = np.zeros(4096)
 #        enemy_y, enemy_x = (obs.observation.feature_minimap.player_relative == features.PlayerRelative.ENEMY).nonzero()
 #        for i in range(0, len(enemy_y)):
@@ -198,6 +206,7 @@ class TerranRLAgent(base_agent.BaseAgent):
         current_state[2] = supply_limit
         current_state[3] = army_supply
 
+        # 적군의 위치를 16개 포인트로 지정하여 업데이트 하는 코드
         hot_squares = np.zeros(16)
         enemy_y, enemy_x = (obs.observation.feature_minimap.player_relative == features.PlayerRelative.ENEMY).nonzero()
         for i in range(0, len(enemy_y)):
@@ -214,13 +223,14 @@ class TerranRLAgent(base_agent.BaseAgent):
 
         if self.previous_action is not None:
             reward = 0
-
+            # Reward를 제공하는 함수 (상태 유닛이 kill된 개수에 따라 보상)
             if killed_unit_score > self.previous_killed_unit_score:
                 reward += KILL_UNIT_REWARD
-
+            # 파괴한 상대 건물의 개수만큼 보상
             if killed_building_score > self.previous_killed_building_score:
                 reward += KILL_BUILDING_REWARD
 
+            # Q-table을 업데이트 하는 코드 (위에서 계산된 보상을 기반으로)
             self.qlearn.learn(str(self.previous_state), self.previous_action, reward, str(current_state))
 
         rl_action = self.qlearn.choose_action(str(current_state))
@@ -246,7 +256,7 @@ class TerranRLAgent(base_agent.BaseAgent):
                     scv = random.choice(scvs)
                     if scv.x >= 0 and scv.y >= 0:
                         return actions.FUNCTIONS.select_point("select", (scv.x,
-                                                                              scv.y))
+                                                                         scv.y))
 
         elif smart_action == ACTION_BUILD_SUPPLY_DEPOT:
             if self.can_do(obs, actions.FUNCTIONS.Build_SupplyDepot_screen.id):
