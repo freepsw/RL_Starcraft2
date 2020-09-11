@@ -451,10 +451,8 @@ class ZergRLAgent(base_agent.BaseAgent):
 
             if zergling_count > self.previous_zergling_count:
                 reward += 0.2
-                if supply_limit > self.previous_supply_limit:
-                    reward *= 1.2
                 if army_supply > self.previous_army_count:
-                    reward *= 1.2
+                    reward *= 1.5
             if saved_minerals_score > 2000:
                 reward *= 0.7
 
