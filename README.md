@@ -451,4 +451,5 @@ YearZero
     step_mul: 8, game_steps_per_episode: 28800
 ```
 
-### 설치 확인 및 
+### Star2 Gamelog
+- /Users/skiper/Library/Application Support/Blizzard/StarCraft II/GameLogs
